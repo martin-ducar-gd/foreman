@@ -10,4 +10,9 @@ class ImageTest < ActiveSupport::TestCase
     image.valid? #trigger validations
     assert image.errors.messages.keys.include?(:uuid)
   end
+
+  test "image scope search for compute_resource works" do
+    resource = compute_resources(:one)
+    assert Image.search_for("compute_resource = #{resource.name}")
+  end
 end
