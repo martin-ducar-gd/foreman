@@ -1,3 +1,5 @@
+require 'excon'
+
 module Foreman::Model
   class Openstack < ComputeResource
     include KeyPairComputeResource
@@ -188,8 +190,17 @@ module Foreman::Model
         :openstack_identity_endpoint => url }
     end
 
+    def fog_timeouts
+      { :connection_options =>
+        { :read_timeout => SETTINGS[:openstack][:read_timeout] || Excon::DEFAULTS[:read_timeout],
+          :write_timeout => SETTINGS[:openstack][:write_timeout] || Excon::DEFAULTS[:write_timeout],
+          :connection_timeout => SETTINGS[:openstack][:connect_timeout] || Excon::DEFAULTS[:connect_timeout]
+        }
+      }
+    end
+
     def client
-      @client ||= ::Fog::Compute.new(fog_credentials)
+      @client ||= ::Fog::Compute.new(fog_credentials.merge(fog_timeouts))
     end
 
     def network_client
