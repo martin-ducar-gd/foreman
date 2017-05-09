@@ -31,6 +31,7 @@ module Foreman::Controller::Parameters::ComputeResource
 
         # openstack
         filter.permit :allow_external_network,
+          :connection_options
           :key_pair,
           :tenant
 

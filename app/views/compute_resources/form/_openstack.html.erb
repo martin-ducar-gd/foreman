@@ -6,3 +6,4 @@
 <%= selectable_f(f, :tenant, tenants, {}, {:label => _('Tenant'), :disabled => tenants.empty?,
                  :help_inline_permanent => load_button_f(f, !tenants.empty?, _("Load Tenants")) }) %>
 <%= checkbox_f f, :allow_external_network, {:checked => f.object.allow_external_network, :label => _("Allow external network as main network")} %>
+<%= text_f f, :connection_options %>

@@ -3,7 +3,7 @@ require 'excon'
 module Foreman::Model
   class Openstack < ComputeResource
     include KeyPairComputeResource
-    attr_accessor :tenant, :scheduler_hint_value
+    attr_accessor :tenant, :scheduler_hint_value, :connection_options
     delegate :flavors, :to => :client
     delegate :tenants, :to => :client
     delegate :security_groups, :to => :client
@@ -41,6 +41,17 @@ module Foreman::Model
 
     def tenant=(name)
       attrs[:tenant] = name
+    end
+
+    def connection_options
+      attrs[:connection_options]
+    end
+
+    def connection_options=(arg)
+      attrs[:connection_options] = Foreman::Parameters::Caster.new(self, :attribute_name => :connection_options, :to => :json).cast
+    rescue StandardError, SyntaxError => e
+      Foreman::Logging.exception("Error while parsing connection_options", e)
+      errors.add(:value, _("is invalid %s") % arg)
     end
 
     def allow_external_network
@@ -190,27 +201,23 @@ module Foreman::Model
         :openstack_identity_endpoint => url }
     end
 
-    def fog_timeouts
-      { :connection_options =>
-        { :read_timeout => SETTINGS[:openstack][:read_timeout] || Excon::DEFAULTS[:read_timeout],
-          :write_timeout => SETTINGS[:openstack][:write_timeout] || Excon::DEFAULTS[:write_timeout],
-          :connection_timeout => SETTINGS[:openstack][:connect_timeout] || Excon::DEFAULTS[:connect_timeout]
-        }
-      }
+    def client_arguments
+      return fog_credentials unless connection_options
+      fog_credentials.merge({:connection_options => connection_options})
     end
 
     def client
-      @client ||= ::Fog::Compute.new(fog_credentials.merge(fog_timeouts))
+      @client ||= ::Fog::Compute.new(client_arguments)
     end
 
     def network_client
-      @network_client ||= ::Fog::Network.new(fog_credentials)
+      @network_client ||= ::Fog::Network.new(client_arguments)
     rescue
       @network_client = nil
     end
 
     def volume_client
-      @volume_client ||= ::Fog::Volume.new(fog_credentials)
+      @volume_client ||= ::Fog::Volume.new(client_arguments)
     end
 
 
